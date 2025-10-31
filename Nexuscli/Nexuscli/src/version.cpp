@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 
-const std::string Version::CURRENT_VERSION = "1.0.0";
+const std::string Version::CURRENT_VERSION = "1.1.0";
 const std::string Version::VERSION_URL = "https://raw.githubusercontent.com/11Nexuss/NexusCLI/main/version.txt";
 const std::string Version::DOWNLOAD_URL = "https://github.com/11Nexuss/NexusCLI/releases/latest/download/nexus.exe";
 
