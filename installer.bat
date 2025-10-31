@@ -15,8 +15,7 @@ echo ========================================
 echo.
 
 set "INSTALL_DIR=%ProgramFiles%\NexusCLI"
-set "DOWNLOAD_URL=https://github.com/11Nexuss/Nexuscli/releases/latest/download/nexus.exe"
-set "BACKUP_URL=https://github.com/11Nexuss/Nexuscli/releases/download/v1.0.0/nexus.exe"
+set "DOWNLOAD_URL=https://github.com/11Nexuss/Nexuscli/releases/download/Release/Nexus.exe"
 
 :: Create installation directory
 if not exist "%INSTALL_DIR%" (
@@ -32,95 +31,114 @@ echo [1/5] Installing to: %INSTALL_DIR%
 
 :: Download NexusCLI
 echo [2/5] Downloading NexusCLI...
-powershell -Command "& {
-    try {
-        Invoke-WebRequest -Uri '%DOWNLOAD_URL%' -OutFile '%INSTALL_DIR%\nexus.exe' -UseBasicParsing
-        if (-not (Test-Path '%INSTALL_DIR%\nexus.exe')) {
-            throw 'Primary download failed'
-        }
-    }
-    catch {
-        Write-Host 'Primary download failed, trying backup URL...'
-        try {
-            Invoke-WebRequest -Uri '%BACKUP_URL%' -OutFile '%INSTALL_DIR%\nexus.exe' -UseBasicParsing
-        }
-        catch {
-            Write-Host 'ERROR: Download failed - $($_.Exception.Message)'
-            exit 1
-        }
-    }
-}"
+
+:: Method 1: Try with bitsadmin (built into Windows)
+echo Trying bitsadmin download...
+bitsadmin /transfer "NexusDownload" /download /priority normal "%DOWNLOAD_URL%" "%INSTALL_DIR%\nexus.exe"
+
+:: Method 2: If bitsadmin fails, try certutil
+if not exist "%INSTALL_DIR%\nexus.exe" (
+    echo Bitsadmin failed, trying certutil...
+    certutil -urlcache -split -f "%DOWNLOAD_URL%" "%INSTALL_DIR%\nexus.exe"
+)
+
+:: Method 3: If both fail, try PowerShell
+if not exist "%INSTALL_DIR%\nexus.exe" (
+    echo Certutil failed, trying PowerShell...
+    powershell -Command "(New-Object Net.WebClient).DownloadFile('%DOWNLOAD_URL%', '%INSTALL_DIR%\nexus.exe')"
+)
 
 if not exist "%INSTALL_DIR%\nexus.exe" (
-    echo ERROR: Download failed
+    echo ERROR: All download methods failed
+    echo Please check your internet connection and try again
+    echo.
+    echo You can also manually download from:
+    echo %DOWNLOAD_URL%
     pause
     exit /b 1
 )
 
 :: Create version file
 echo [3/5] Creating version file...
-echo 1.0.0 > "%INSTALL_DIR%\version.txt"
+echo 1.1.0 > "%INSTALL_DIR%\version.txt"
 
 :: Add to PATH
 echo [4/5] Adding to system PATH...
-setx PATH "%PATH%;%INSTALL_DIR%" /M >nul 2>&1
+
+:: Get current system PATH
+for /f "skip=2 tokens=1,2*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v Path 2^>nul') do (
+    if /i "%%a"=="Path" (
+        set "current_path=%%c"
+    )
+)
+
+:: Check if already in PATH
+echo %current_path% | find /i "%INSTALL_DIR%" > nul
+if errorlevel 1 (
+    :: Not in PATH, so add it
+    set "new_path=%current_path%;%INSTALL_DIR%"
+    reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v Path /t REG_EXPAND_SZ /d "!new_path!" /f > nul
+)
 
 :: Also update current session PATH temporarily
 set "PATH=%PATH%;%INSTALL_DIR%"
 
 :: Create uninstaller
 echo [5/5] Creating uninstaller...
-echo @echo off > "%INSTALL_DIR%\uninstall.bat"
-echo setlocal enabledelayedexpansion >> "%INSTALL_DIR%\uninstall.bat"
-echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo echo ======================================== >> "%INSTALL_DIR%\uninstall.bat"
-echo echo    NexusCLI Uninstaller >> "%INSTALL_DIR%\uninstall.bat"
-echo echo ======================================== >> "%INSTALL_DIR%\uninstall.bat"
-echo echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo :: Check if running as administrator >> "%INSTALL_DIR%\uninstall.bat"
-echo net session ^>nul 2^>^&1 >> "%INSTALL_DIR%\uninstall.bat"
-echo if %%errorLevel%% neq 0 ( >> "%INSTALL_DIR%\uninstall.bat"
-echo     echo Requesting administrator privileges... >> "%INSTALL_DIR%\uninstall.bat"
-echo     powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%%~f0\"\"' -Verb RunAs" >> "%INSTALL_DIR%\uninstall.bat"
-echo     exit /b >> "%INSTALL_DIR%\uninstall.bat"
-echo ) >> "%INSTALL_DIR%\uninstall.bat"
-echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo set "INSTALL_DIR=%INSTALL_DIR%" >> "%INSTALL_DIR%\uninstall.bat"
-echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo echo Removing NexusCLI from PATH... >> "%INSTALL_DIR%\uninstall.bat"
-echo set "NEW_PATH=%%PATH:;%INSTALL_DIR%=%%" >> "%INSTALL_DIR%\uninstall.bat"
-echo setx PATH "%%NEW_PATH%%" /M ^>nul 2^>^&1 >> "%INSTALL_DIR%\uninstall.bat"
-echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo echo Deleting installation directory... >> "%INSTALL_DIR%\uninstall.bat"
-echo rmdir /s /q "%%INSTALL_DIR%%" >> "%INSTALL_DIR%\uninstall.bat"
-echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo if exist "%%INSTALL_DIR%%" ( >> "%INSTALL_DIR%\uninstall.bat"
-echo     echo ERROR: Failed to remove installation directory >> "%INSTALL_DIR%\uninstall.bat"
-echo     echo You may need to manually delete: %%INSTALL_DIR%% >> "%INSTALL_DIR%\uninstall.bat"
-echo ) else ( >> "%INSTALL_DIR%\uninstall.bat"
-echo     echo Successfully uninstalled NexusCLI >> "%INSTALL_DIR%\uninstall.bat"
-echo ) >> "%INSTALL_DIR%\uninstall.bat"
-echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo echo. >> "%INSTALL_DIR%\uninstall.bat"
-echo pause >> "%INSTALL_DIR%\uninstall.bat"
+(
+echo @echo off
+echo setlocal enabledelayedexpansion
+echo.
+echo echo ========================================
+echo echo    NexusCLI Uninstaller
+echo echo ========================================
+echo echo.
+echo.
+echo :: Check if running as administrator
+echo net session ^>nul 2^>^&1
+echo if %%errorLevel%% neq 0 (
+echo     echo Requesting administrator privileges...
+echo     powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%%~f0\"\"' -Verb RunAs"
+echo     exit /b
+echo )
+echo.
+echo set "INSTALL_DIR=%INSTALL_DIR%"
+echo.
+echo echo Removing NexusCLI from system PATH...
+echo for /f "skip=2 tokens=1,2*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v Path 2^>nul'^) do (
+echo     if /i "%%a"=="Path" set "current_path=%%c"
+echo )
+echo.
+echo set "new_path=%%current_path:;%INSTALL_DIR%=%%"
+echo set "new_path=%%new_path:;%INSTALL_DIR%=%%"
+echo reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v Path /t REG_EXPAND_SZ /d "%%new_path%%" /f ^> nul
+echo.
+echo echo Deleting installation directory...
+echo timeout /t 2 /nobreak ^> nul
+echo rmdir /s /q "%%INSTALL_DIR%%" 2^>nul
+echo.
+echo if exist "%%INSTALL_DIR%%" (
+echo     echo ERROR: Failed to remove installation directory
+echo     echo You may need to manually delete: %%INSTALL_DIR%%
+echo ) else (
+echo     echo Successfully uninstalled NexusCLI
+echo )
+echo.
+echo echo.
+echo pause
+) > "%INSTALL_DIR%\uninstall.bat"
 
 :: Create Start Menu shortcut
 echo Creating Start Menu shortcut...
-powershell -Command "& {
-    $WshShell = New-Object -comObject WScript.Shell
-    $Shortcut = $WshShell.CreateShortcut('$env:ProgramData\Microsoft\Windows\Start Menu\Programs\NexusCLI.lnk')
-    $Shortcut.TargetPath = '%INSTALL_DIR%\nexus.exe'
-    $Shortcut.WorkingDirectory = '%INSTALL_DIR%'
-    $Shortcut.Save()
-}"
+powershell -Command "$WshShell = New-Object -comObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('$env:ProgramData\Microsoft\Windows\Start Menu\Programs\NexusCLI.lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\nexus.exe'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Save()" >nul 2>&1
 
 :: Test installation
 echo.
 echo Testing installation...
 "%INSTALL_DIR%\nexus.exe" version >nul 2>&1
 if errorlevel 1 (
-    echo WARNING: Installation test failed
+    echo WARNING: Installation test failed - but installation completed
+    echo You may need to restart your command prompt and try 'nexus version'
 ) else (
     echo Installation test successful!
 )
