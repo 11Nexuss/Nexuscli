@@ -122,6 +122,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -131,11 +132,18 @@
     <ClCompile Include="src\templates\console_template.cpp" />
     <ClCompile Include="src\templates\memory_reader_template.cpp" />
     <ClCompile Include="src\template_manager.cpp" />
+    <ClCompile Include="src\updater.cpp" />
+    <ClCompile Include="src\version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\nexuscli.h" />
     <ClInclude Include="src\project_generator.h" />
     <ClInclude Include="src\template_manager.h" />
+    <ClInclude Include="src\updater.h" />
+    <ClInclude Include="src\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="version.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

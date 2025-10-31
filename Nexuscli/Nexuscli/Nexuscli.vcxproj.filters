@@ -33,6 +33,12 @@
     <ClCompile Include="src\templates\memory_reader_template.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\updater.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\nexuscli.h">
@@ -44,5 +50,14 @@
     <ClInclude Include="src\template_manager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\updater.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="version.txt" />
   </ItemGroup>
 </Project>

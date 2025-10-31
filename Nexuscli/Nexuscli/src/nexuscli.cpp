@@ -1,6 +1,8 @@
 ﻿#include "nexuscli.h"
 #include "template_manager.h"
 #include "project_generator.h"
+#include "updater.h"
+#include "version.h"
 #include <iostream>
 #include <filesystem>
 
@@ -26,10 +28,20 @@ NexusCLI::NexusCLI(int argc, char* argv[]) {
         CreateProject();
     }
     else if (command == "update") {
-        CheckForUpdates();
+        Updater::CheckForUpdates();
     }
     else if (command == "version") {
-        std::cout << "NexusCLI Version: " << currentVersion << std::endl;
+        std::cout << "NexusCLI Version: " << Version::CURRENT_VERSION << std::endl;
+
+        // Check if update available without prompting
+        std::string latestVersion = Updater::GetLatestVersion();
+        if (!latestVersion.empty()) {
+            std::string cleanLatest = Version::GetVersionFromString(latestVersion);
+            if (Version::IsNewerVersion(Version::CURRENT_VERSION, cleanLatest)) {
+                std::cout << "🎉 Update available: v" << cleanLatest << std::endl;
+                std::cout << "Run 'nexus update' to install the latest version" << std::endl;
+            }
+        }
     }
     else if (command == "list") {
         ListTemplates();
@@ -46,12 +58,12 @@ NexusCLI::NexusCLI(int argc, char* argv[]) {
 void NexusCLI::ShowHelp() {
     std::cout << "NexusCLI - C++ Project Generator" << std::endl;
     std::cout << "=================================" << std::endl;
-    std::cout << "Version: " << currentVersion << std::endl;
+    std::cout << "Version: " << Version::CURRENT_VERSION << std::endl;
     std::cout << std::endl;
     std::cout << "Usage:" << std::endl;
     std::cout << "  nexus new <project_name> [type]" << std::endl;
-    std::cout << "  nexus update                    Check for updates" << std::endl;
-    std::cout << "  nexus version                   Show version" << std::endl;
+    std::cout << "  nexus update                    Check and install updates" << std::endl;
+    std::cout << "  nexus version                   Show version and check for updates" << std::endl;
     std::cout << "  nexus list                      List templates" << std::endl;
     std::cout << "  nexus help                      Show this help" << std::endl;
     std::cout << std::endl;
@@ -72,8 +84,7 @@ void NexusCLI::ShowHelp() {
     std::cout << "  nexus new MyGameHack memory-reader" << std::endl;
     std::cout << "  nexus new MyTool console" << std::endl;
     std::cout << std::endl;
-    std::cout << "More templates and updates:" << std::endl;
-    std::cout << "  https://github.com/11Nexuss/NexusCLI" << std::endl;
+    std::cout << "Auto-update system: nexus update" << std::endl;
 }
 
 void NexusCLI::ListTemplates() {
@@ -84,16 +95,6 @@ void NexusCLI::ListTemplates() {
     for (const auto& name : templates) {
         std::cout << "  - " << name << std::endl;
     }
-}
-
-void NexusCLI::CheckForUpdates() {
-    std::cout << "Checking for updates..." << std::endl;
-    std::cout << "You have the latest version: " << currentVersion << std::endl;
-    std::cout << std::endl;
-    std::cout << "To update manually:" << std::endl;
-    std::cout << "1. Visit: https://github.com/11Nexuss/NexusCLI" << std::endl;
-    std::cout << "2. Download the latest release" << std::endl;
-    std::cout << "3. Run install.bat again" << std::endl;
 }
 
 void NexusCLI::CreateProject() {
@@ -131,4 +132,18 @@ void NexusCLI::CreateProject() {
     catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << std::endl;
     }
+}
+
+bool NexusCLI::ValidateProjectName() {
+    if (projectName.empty()) return false;
+
+    // Check if name contains only valid characters
+    for (char c : projectName) {
+        if (!std::isalnum(c) && c != '_') {
+            return false;
+        }
+    }
+
+    // Check if first character is a letter
+    return std::isalpha(projectName[0]);
 }
