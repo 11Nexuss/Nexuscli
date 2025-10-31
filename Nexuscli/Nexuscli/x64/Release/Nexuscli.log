@@ -1,0 +1,17 @@
+﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(538,5): warning MSB8028: The intermediate directory (x64\Release\) contains files shared from another project (Nexuscli.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  main.cpp
+  nexuscli.cpp
+C:\Users\Jas\Documents\Githubprojs\Nexuscli\Nexuscli\src\nexuscli.cpp(119,22): warning C4566: character represented by universal-character-name '\u2705' cannot be represented in the current code page (1252)
+C:\Users\Jas\Documents\Githubprojs\Nexuscli\Nexuscli\src\nexuscli.cpp(120,22): warning C4566: character represented by universal-character-name '\U0001F4CD' cannot be represented in the current code page (1252)
+  project_generator.cpp
+  console_template.cpp
+  memory_reader_template.cpp
+  template_manager.cpp
+  Generating code
+  534 of 850 functions (62.8%) were compiled, the rest were copied from previous compilation.
+    106 functions were new in current compilation
+    77 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Nexuscli.vcxproj -> C:\Users\Jas\Documents\Githubprojs\Nexuscli\x64\Release\Nexus.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.
